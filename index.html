@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Study Notes & Quiz Helper</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 760px;
+      margin: 40px auto;
+      padding: 0 16px;
+      background: #f7f9fc;
+      color: #1f2937;
+    }
+    textarea, input {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 10px;
+      margin-top: 8px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      font-size: 14px;
+    }
+    textarea { height: 180px; }
+    button {
+      margin-top: 12px;
+      padding: 10px 18px;
+      background: #2563eb;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 15px;
+      cursor: pointer;
+    }
+    button:hover { background: #1d4ed8; }
+    #output {
+      margin-top: 24px;
+      background: #fff;
+      padding: 18px;
+      border-radius: 8px;
+      border: 1px solid #e2e8f0;
+      white-space: pre-wrap;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+  <h1>AI Study Notes & Quiz Helper</h1>
+  <p>Paste your study notes below to get 5 key bullet points and 3 practice quiz questions.</p>
+
+  <label><strong>Gemini API Key (free from Google AI Studio):</strong></label>
+  <input id="apiKey" type="password" placeholder="Paste your AIza... key here" />
+
+  <label style="display:block; margin-top:12px;"><strong>Your Study Notes:</strong></label>
+  <textarea id="notes" placeholder="Paste lecture notes, textbook paragraphs, or revision points..."></textarea>
+
+  <button id="generateBtn" onclick="generateStudyAid()">Generate Summary & Quiz</button>
+
+  <div id="output">Your summary and quiz will appear here...</div>
+
+  <script>
+    async function generateStudyAid() {
+      const apiKey = document.getElementById("apiKey").value.trim();
+      const notes = document.getElementById("notes").value.trim();
+      const output = document.getElementById("output");
+      const btn = document.getElementById("generateBtn");
+
+      if (!apiKey || !notes) {
+        output.textContent = "Please enter both your Gemini API key and your study notes.";
+        return;
+      }
+
+      btn.disabled = true;
+      output.textContent = "Generating summary and quiz...";
+
+      const prompt = `You are a helpful study tutor. Based on the notes below, provide:
+1. Exactly 5 concise bullet points summarizing the key ideas.
+2. Exactly 3 quiz questions (with answers at the bottom) to test understanding.
+
+Notes:
+${notes}`;
+
+      try {
+        const res = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(apiKey)}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: prompt }] }]
+            })
+          }
+        );
+        const data = await res.json();
+        if (!res.ok) {
+          output.textContent = "Error: " + (data.error?.message || "Could not reach Gemini API.");
+        } else {
+          const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "No response generated.";
+          output.textContent = text;
+        }
+      } catch (err) {
+        output.textContent = "Network error: " + err.message;
+      } finally {
+        btn.disabled = false;
+      }
+    }
+  </script>
+</body>
+</html>
